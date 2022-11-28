@@ -1,53 +1,45 @@
-# Create your grading script here
-
-rm -rf stderr.txt
+FILE="ListExamples.java"
+CPATH=".:lib/hamcrest-core-1.3.jar:lib/junit-4.13.2.jar"
 rm -rf student-submission
+echo "Cloning repository..."
 git clone $1 student-submission
 cd student-submission
-if  ! [ -e ListExamples.java ]
-
-	then
-		echo "ListExamples.java file not found"
-		exit 1
-
-	else
-		cp ListExamples.java ./../
-		cd ..
-		javac -cp .:lib/hamcrest-core-1.3.jar:lib/junit-4.13.2.jar *.java 2> stderr.txt
-fi
-
-echo
-
-[ -s stderr.txt ]
-
-if [ $? -eq 0 ]
-
+if [[ -f "$FILE" ]]
 then
-	echo "ListExamples.java file can't compile!"
-	exit 1
-
+        echo "$FILE has been found."
 else
-	echo "ListExamples.java file is compiled successfully!"
+        echo "$FILE was not found."
+        echo "Please resubmit your code with the correct file."
+        exit 1
+fi
+cd ../
+echo "Copying test file..."
+cp TestListExamples.java student-submission/
+cp -r lib student-submission/
+cd student-submission/
+javac -cp $CPATH *.java 2> error.txt
+if [[ $? -ne 0 ]]
+then
+        echo "The code could not compile."
+        cat error.txt
+        exit 1
+fi
+java -cp $CPATH org.junit.runner.JUnitCore TestListExamples | grep "Tests run:" > results.txt
+NUMS=(`grep -o '[0-9]' results.txt`)
+PASS=${NUMS[0]}
+
+if [[ 2 -eq $PASS ]]
+then
+        echo "You have received a 0%"
 fi
 
-java -cp .:lib/hamcrest-core-1.3.jar:lib/junit-4.13.2.jar org.junit.runner.JUnitCore TestListExamples > stdout.txt
+if [[ 1 -eq $PASS ]]
+then
+        echo "You have received a 50%"
+fi
 
-echo
-
-COUNT_FILTER_TEST=$(grep -o "ListExamples.filter(" TestListExamples.java | wc -l)
-
-COUNT_MERGE_TEST=$(grep -o "ListExamples.merge(" TestListExamples.java | wc -l)
-
-COUNT_FILTER=$(grep -o "testFilter" stdout.txt | wc -l)
-
-COUNT_MERGE=$(grep -o "testMerge" stdout.txt | wc -l)
-
-PASSED_FILTER=$(echo "$COUNT_FILTER_TEST-$COUNT_FILTER/2" | bc)
-
-PASSED_MERGE=$(echo "$COUNT_MERGE_TEST-$COUNT_MERGE/2" | bc)
-
-echo "you passed $PASSED_FILTER out of $COUNT_FILTER_TEST test for filter() method!"
-
-echo
-
-echo "you passed $PASSED_MERGE out of $COUNT_MERGE_TEST for merge() method!"
+if [[ 0 -eq $PASS ]]
+then
+        echo "You have received a 100%"
+fi
+cat results.txt
